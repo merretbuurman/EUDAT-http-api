@@ -215,6 +215,8 @@ class BasicEndpoint(Uploader, EudatEndpoint):
         # get parameters with defaults
         path, resource, filename, force = self.get_file_parameters(icom)
 
+        # TODO: when using PRC, return 409 if file already exists
+
         # if path variable empty something is wrong
         if path is None:
             return self.send_errors(

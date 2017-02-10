@@ -16,11 +16,14 @@ rest:
     - icat:rodserver
 ##################
     # # GRAPHDB MUST BE CALLED gdb
-    # - graphdb:gdb
+    - graphdb:gdb
+
+# WORK WITH GRAPHDB
 
 # graphdb:
 #   ports:
 #     - 9090:7474
+#     - 7687:7687
 
 sqladmin:
   volumes_from:
