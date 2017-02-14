@@ -77,6 +77,11 @@ if [ "$AUTH" == '' ]; then
     . /tmp/gettoken 2>&1 1> /dev/null
 fi
 
+if [ "$TOKEN" == '' -o "$TOKEN" == 'null' ]; then
+    echo "Invalid token: *$TOKEN*"
+    return
+fi
+
 echo "Token available as \$TOKEN"
 echo ""
 
