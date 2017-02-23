@@ -19,7 +19,7 @@ from ..services.uploader import Uploader
 from ..services.irods.client import IrodsException
 # from ..services.irods.translations import Irods2Graph
 # from commons import htmlcodes as hcodes
-from ...auth import authentication
+# from ...auth import authentication
 # from ...confs import config
 from flask import request, current_app
 from commons import htmlcodes as hcodes
@@ -41,6 +41,7 @@ class BasicEndpoint(Uploader, EudatEndpoint):
         """ Download file from filename """
 
         if irods_location is None:
+            # TO FIX
             return self.send_errors('location', 'Missing filepath inside URI',
                                     code=hcodes.HTTP_BAD_REQUEST)
         irods_location = self.fix_location(irods_location)
@@ -214,8 +215,6 @@ class BasicEndpoint(Uploader, EudatEndpoint):
         icom = r.icommands
         # get parameters with defaults
         path, resource, filename, force = self.get_file_parameters(icom)
-
-        # TODO: when using PRC, return 409 if file already exists
 
         # if path variable empty something is wrong
         if path is None:

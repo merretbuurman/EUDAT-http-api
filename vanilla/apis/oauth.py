@@ -259,6 +259,7 @@ class Authorize(B2accessUtilities):
         b2access = self.create_b2access_client(auth, decorate=True)
         b2access_token, b2access_errors = self.request_b2access_token(b2access)
         if b2access_token is None:
+            # TO FIX:
             return self.send_errors(*b2access_errors)
 
         # B2access user info
