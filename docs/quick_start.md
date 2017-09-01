@@ -68,6 +68,11 @@ is by using their [toolbox](https://www.docker.com/toolbox).
 
 NOTE: compose comes bundled with the toolbox.
 
+## Two modes
+
+There are two main modes to work with the API server. The main one - called `debug` - is for developers: you are expected to test, debug and develop new code. The other options is mode `production`, suited for deploying your server in a real use case scenario on top of your already running `B2SAFE` instance. The main difference between these modes is that the production mode requires a B2SAFE instance, while the debug mode installs its own
+iRODS instance in a container. **(RIGHT?)**
+
 
 ## Start-up the project
 
@@ -183,10 +188,10 @@ $ rapydo init
 
 NOTE: with `RC1` there is no working `upgrade` process in place to make life easier if you already have this project cloned from a previous release. This is something important already in progress [here](https://github.com/EUDAT-B2STAGE/http-api/issues/87). ** --> So, what to do now, until this is fixed? **
 
-### 5. MODES
+### 5. Launch the project
 
-There are two main modes to work with the API server. The main one - called `debug` - is for developers: you are expected to test, debug and develop new code. The other options is mode `production`, suited for deploying your server in a real use case scenario on top of your already running `B2SAFE` instance. The main difference between these modes is that the production mode requires a B2SAFE instance, while the debug mode installs its own
-iRODS instance in a container.
+As mentioned above, there are two main modes to work with the API server. The commands to start the http-api are
+different for these modes. Please follow one of the sections below, depending on your desired mode.
 
 #### debug mode
 
