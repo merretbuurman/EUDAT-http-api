@@ -76,7 +76,10 @@ Here's a step-by-step tutorial to work with the HTTP API project.
 
 ### 1. cloning 
 
-To clone the working code:
+For doing these steps, you do not need sudo rights. You can run them as your normal linux user,
+for example in your normal linux user's home directory.
+
+To clone the working code, run:
 
 ```bash
 $ VERSION=0.6.0 \
@@ -222,14 +225,15 @@ NOTE: on the client image you have multiple tools installed for testing:
 
 Some important points before going further:
 
-1. Please follow this paragraph only if you plan to deploy the HTTP API server in production
+1. Please follow this paragraph only if you plan to deploy the HTTP API server in production (this is misleading! Our testbed for example is not production) on top of an existing B2SAFE instance.
 2. Usually in production you have a domain name associated to your host IP (e.g. `b2stage.cineca.it` to 240.bla.bla.bla). But you can just use 'localhost' if this is not the case.
 3. You need a `B2ACCESS` account on the development server for the HTTP API application. Set the credentials [here](https://github.com/EUDAT-B2STAGE/http-api/blob/0.6.0/projects/eudat/project_configuration.yaml#L22-L26) otherwise the endpoint `/auth/askauth` would not work.  
 
 Deploying is very simple:
 
 ```bash
-# define your domain
+# define your domain, i.e. the fully qualified domain name of the machine that runs the http-api
+# (find it with the command "hostname")
 $ DOMAIN='b2stage.cineca.it'
 # launch production mode
 $ rapydo --host $DOMAIN --mode production start
