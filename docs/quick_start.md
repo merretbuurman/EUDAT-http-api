@@ -169,7 +169,7 @@ The controller is what let you manage the project without much effort.
 rapydo is a python tool that is used to... All the user's interaction with the http-api installation
 uses rapydo. The commands to initialize, build, start or stop the http-api are passed to the rapydo tool. It runs
 outside the docker containers and takes care of starting and stopping the docker containers the http-api consists of.
-For more information, please check https://pypi.python.org/pypi/rapydo-controller
+For more information, please check [rapydo's page] on pypi(https://pypi.python.org/pypi/rapydo-controller).
 
 Here's what you need to use it:
 
@@ -267,7 +267,7 @@ Now may access your IP or your domain and the HTTP API endpoints are online, pro
 
 ```bash
 open $DOMAIN/api/status # or:
-wget $DOMAIN/api/status | cat
+wget $DOMAIN/api/status | cat # (if "open" results in "Couldn't get a file descriptor referring to the console")
 ```
 
 ### Certificates
