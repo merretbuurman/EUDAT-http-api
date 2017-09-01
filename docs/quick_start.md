@@ -238,8 +238,11 @@ $ rapydo --host $DOMAIN --mode production start
 Now may access your IP or your domain and the HTTP API endpoints are online, protected by a proxy server. You can test this with:
 
 ```bash
-open $DOMAIN/api/status
+open $DOMAIN/api/status # or:
+wget $DOMAIN/api/status | cat
 ```
+
+### Certificates
 
 Up to now the current SSL certificate is self signed and is 'not secure' for all applications. Your browser is probably complaining for this. This is why we need to produce one with the free `letsencrypt` service.
 
@@ -249,6 +252,48 @@ $ rapydo --host $DOMAIN --mode production ssl-certificate
 ```
 
 If you check again the server should now be correctly certificated. At this point the service should be completely functional.
+
+Instead, you can use other certificates, e.g. if your institution provides signed certificates. In that case, need the certificate (*.pem) and the private key (*.pem or *.key).
+To install them, do the following:
+
+1. Log into the docker container "eudat_proxy_1":
+
+```bash
+docker exec -it eudat_proxy_1 bash
+
+# Prompt has changed, also username and hostname:
+whoami # root, was your username on the host machine before
+hostname # reverseproxy, was the host machine's hostname before
+```
+
+2. Make copies of the existing certificates:
+
+```bash
+cp /etc/letsencrypt/real/fullchain1.pem /etc/letsencrypt/real/fullchain1.pem_backup
+cp /etc/letsencrypt/real/privkey1.pem   /etc/letsencrypt/real/privkey1.pem_backup
+```
+
+3. Exit from the docker shell:
+
+```bash
+exit
+whoami # your username on the host machine
+hostname # your host machine's hostname
+```
+
+4. Copy the certificates to the right location inside the docker container and make sure they have the correct names:
+
+```bash
+docker cp /path/to/certificate.pem eudat_proxy_1:/etc/letsencrypt/real/fullchain1.pem
+docker cp /path/to/privatekey.pem  eudat_proxy_1:/etc/letsencrypt/real/privkey1.pem
+```
+
+5. Restart the docker container **(necessary?)**
+
+```bash
+docker restart eudat_proxy_1
+```
+
 
 
 ## Other operations
