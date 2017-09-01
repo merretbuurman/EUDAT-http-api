@@ -96,6 +96,52 @@ Now that you have all necessary software installed, before launching services yo
 
 Here you can change at least the basic passwords, or configure access to external service (e.g. your own instance of iRODS/B2SAFE) for production.
 
+Some hints:
+
+**Dockerized DB:** http-api installs its own postgresql database for internal use, in an extra container. In debug mode, that postgresql installation is also used for storing the ICAT (the database needed by the iRODS instance). As postgresql will be installed freshly and the database created freshly, you can choose username and password freely. The username "rods" is recommended because *TODO*.
+
+| Keyword          | Value         | Comment                                          |
+| -----------------|---------------| -------------------------------------------------|
+| ALCHEMY_USER     | rods          | Leave "rods" because *TODO*                      |
+| ALCHEMY_PASSWORD | please choose | Choose a password for the database to be created |
+| ALCHEMY_API_DB   | SQL_API       | Leave "SQL_API" because *TODO*                   |
+
+**B2ACCESS:** Not currently used. No need to configure anything there.
+
+| Keyword          | Value         | Comment                                           |
+| -----------------|---------------| --------------------------------------------------|
+| B2ACCESS_ACCOUNT | *what?*       | Which value to put and why and where get it from? |
+| B2ACCESS_SECRET  | *what?*       | Where to get it from? Needed for?                 |
+
+**LOCAL iRODS server VERSION:** This is only used in DEBUG mode. Please leave all the defaults. (*Right?*)
+
+**PRODUCTION iRODS server VERSION:** This is used in production mode, i.e. if you want to connect your http-api instance to an existing iRODS instance, either on the same machine or on another machine.
+
+| Keyword                  | Value         | Comment                                                                      |
+| -------------------------|---------------| -----------------------------------------------------------------------------|
+| IRODS_HOST               | host name     | IP *(??)* or fully qualified domain name of your iRODS server.               |
+| IRODS_USER               | alice         | The iRODS username to be used to connect to iRODS. Why? Shouldn't any user be able to connect? I don't understand this. |
+| IRODS_GUEST_USER         | *what?*       | *What is this? Needed for what?*                                             |
+| IRODS_DEFAULT_ADMIN_USER | *what?*       | *What is this? Needed for what?*                                             |
+| IRODS_ZONE               | *what?*       | The name of your iRODS zone.                                                 |
+| IRODS_HOME               | home          | The home directory for your data. In standard installations, this is "home". |
+| IRODS_DN                 | *what?*       | The DN from your server certificate. You can find this by executing FOOBAR. This is used by B2ACCESS, so as long as B2ACCESS is not used, it does not matter. |
+| IRODS_PASSWORD           | *what?*       | The password of which irods user?                                            |
+| IRODS_AUTHSCHEME         | credentials   | *What is this? Needed for what? Which choices exist?*                        |
+
+Note: The value "IRODS_DN" 
+
+**PID credentials:** The http-api creates/modifies the Handles (persistent identifiers) of data collections. To do so, it is
+necessary to provide credentials for the Handle service.
+
+| Keyword                          | Value         | Comment                                           |
+| ---------------------------------|---------------| --------------------------------------------------|
+| HANDLE_CREDENTIALS_INTERNAL_PATH | *what?*       | Which value to put and why and where get it from? |
+| HANDLE_BASE                      | *what?*       | Where to get it from? Needed for?                 |
+| HANDLE_USER                      | *what?*       | Where to get it from? Needed for?                 |
+| HANDLE_PREFIX                    | *what?*       | Where to get it from? Needed for?                 |
+| HANDLE_PASS                      | *what?*       | Where to get it from? Needed for?                 |
+
 
 ### 3. controller
 
