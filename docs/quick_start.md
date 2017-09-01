@@ -149,6 +149,13 @@ necessary to provide credentials for the Handle service.
 ### 3. controller
 
 The controller is what let you manage the project without much effort.
+
+** It would be cool to know a little more about it! E.g. what it is based on, whether it runs in a container, ... for example:
+rapydo is a python tool that is used to... All the user's interaction with the http-api installation
+uses rapydo. The commands to initialize, build, start or stop the http-api are passed to the rapydo tool. It runs
+outside the docker containers and takes care of starting and stopping the docker containers the http-api consists of.
+For more information, please check https://pypi.python.org/pypi/rapydo-controller
+
 Here's what you need to use it:
 
 ```bash
@@ -168,11 +175,13 @@ NOTE: python install binaries in `/usr/local/bin`. If you are not the admin/`roo
 
 Your current project needs to be initialized. This step is needed only the first time you use the cloned repository.
 
+** TODO: Please explain what to do if you messed up your init, e.g. by providing wrong config. Can you just rerun init? **
+
 ```bash
 $ rapydo init
 ```
 
-NOTE: with `RC1` there is no working `upgrade` process in place to make life easier if you already have this project cloned from a previous release. This is something important already in progress [here](https://github.com/EUDAT-B2STAGE/http-api/issues/87).
+NOTE: with `RC1` there is no working `upgrade` process in place to make life easier if you already have this project cloned from a previous release. This is something important already in progress [here](https://github.com/EUDAT-B2STAGE/http-api/issues/87). ** --> So, what to do now, until this is fixed? **
 
 ### 5. MODES
 
