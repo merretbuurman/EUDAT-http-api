@@ -26,6 +26,16 @@ The following instruction are based on the hyphotesis that you will work on a `U
 
 Please note that for installing tools into your machine the suggested option is through your preferred OS package manager (e.g. `apt`, `yum`, `brew`, etc.).
 
+## Ports
+
+The only port that is need to be accessible from the outside world is 443 where the HTTP-API will be served.
+
+For the letsencrypt-service (used for creating a signeg certificate and thus avoiding security exceptions for the users accessing the API), ports 80 and 443 are needed. **(right?)**
+
+For debugging, other ports may be useful, such as 81 for the adminer interface, to track down database config problems, etc.
+
+**(any other ports? incoming, outgoing)?**
+
 
 ### Base tools
 
