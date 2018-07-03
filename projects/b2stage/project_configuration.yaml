@@ -58,7 +58,7 @@ variables:
     RESOURCES_HUB:
     RESOURCES_HUBUSER:
     RESOURCES_HUBPASS:
-    ## RABBIT SEADATA
+    ## RABBIT SEADATA (https://pika.readthedocs.io/en/latest/_modules/pika/connection.html)
     RABBIT_HOST: rabbit.b2host.org
     RABBIT_PORT: 5672
     RABBIT_VHOST: elkstack
@@ -66,6 +66,7 @@ variables:
     RABBIT_PASSWORD:
     RABBIT_EXCHANGE: elkexchange
     RABBIT_QUEUE: elkqueue
+    RABBIT_HEARTHEAT_INTERVAL: 300
     ## OTHERS
     REDIS_HOST: redis-cache-1
     REDIS_PREFIX: 01T10
