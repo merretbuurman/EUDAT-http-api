@@ -99,7 +99,6 @@ def log_into_queue(instance, dictionary_message):
     current_exchange = QUEUE_VARS.get('exchange')
     current_queue = QUEUE_VARS.get('queue')
     # FIXME: as variables
-    filter_code = 'de.dkrz.seadata.filter_code.foo.json'
     # app_name = 'requestlogs'
     # app_name = 'maris_elk_test'
     app_name = current_queue
@@ -114,17 +113,7 @@ def log_into_queue(instance, dictionary_message):
 
         ###########
         # channel.queue_declare(queue=current_queue)  # not necessary if exists
-        channel = msg_queue.channel()  # send a message
-        channel.basic_publish(
-            exchange=current_exchange, routing_key=current_queue,
-            properties=pika.BasicProperties(
-                delivery_mode=2,
-                headers={'app_name': app_name, 'filter_code': filter_code},
-            ),
-            body=json.dumps(dictionary_message),
-        )
-    # except (ChannelClosed, ConnectionClosed):
-    #     pass
+        msg_queue.log_json_to_queue(dictionary_message, app_name, current_exchange, current_queue)
     except BaseException as e:
         log.error("Failed to log:\n%s(%s)", e.__class__.__name__, e)
     else:
