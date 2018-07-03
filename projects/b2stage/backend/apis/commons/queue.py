@@ -89,10 +89,6 @@ def log_into_queue(instance, dictionary_message):
     ############
     ############
 
-    from restapi.confs import PRODUCTION
-    if not PRODUCTION:
-        return False
-
     ############
     # LOGGING
 
