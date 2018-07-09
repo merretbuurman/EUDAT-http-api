@@ -28,6 +28,10 @@ git checkout 1.0.3
 ################
 # install the corrensponding rapydo framework version
 sudo -H data/scripts/prerequisites.sh
+
+# If you did not run the prerequisites.sh as sudo, it created a virtual environment for you. In that case, it has to be switched on:
+source b2stage/bin/activate
+
 # build and run
 rapydo init
 rapydo start
