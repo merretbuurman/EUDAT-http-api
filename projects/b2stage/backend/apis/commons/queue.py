@@ -104,12 +104,11 @@ def log_into_queue(instance, dictionary_message):
         # connect
         # FIXME: error seem to be raised if we don't refresh connection?
         # https://github.com/pika/pika/issues/397#issuecomment-35322410
+        # Merret: I think this is solved by my changes in the rapydo class
         msg_queue = instance.get_service_instance(QUEUE_SERVICE)
         log.verbose("Connected to %s", QUEUE_SERVICE)
-
-        ###########
-        # channel.queue_declare(queue=current_queue)  # not necessary if exists
         msg_queue.log_json_to_queue(dictionary_message, app_name, current_exchange, current_queue)
+
     except BaseException as e:
         log.error("Failed to log:\n%s(%s)", e.__class__.__name__, e)
     else:
@@ -119,6 +118,7 @@ def log_into_queue(instance, dictionary_message):
         # NOTE: bad! all connections would result in closed
         # # close resource
         # msg_queue.close()
+        # FIXME: Close it elsewhere! Catching sigkill for example.
 
     return True
 
