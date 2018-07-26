@@ -26,11 +26,11 @@ The following instruction are based on the hyphotesis that you will work on a `U
 
 Please note that for installing tools into your machine the suggested option is through your preferred OS package manager (e.g. `apt`, `yum`, `brew`, etc.).
 
-## Ports
+### Ports
 
 The only port that is need to be accessible from the outside world is 443 where the HTTP-API will be served.
 
-For the letsencrypt-service (used for creating a signeg certificate and thus avoiding security exceptions for the users accessing the API), ports 80 and 443 are needed. **(right?)**
+For the letsencrypt-service (used for creating a signed certificate and thus avoiding security exceptions for the users accessing the API), ports 80 and 443 are needed. **(right?)**
 
 For debugging, other ports may be useful, such as 81 for the adminer interface, to track down database config problems, etc.
 
@@ -41,11 +41,11 @@ For debugging, other ports may be useful, such as 81 for the adminer interface, 
 
 - The `git` client. 
  
-Most of UNIX distributions have it already installed. If that is not that case then refer to the [official documentation]()
+Most UNIX distributions have it already installed. If that is not that case then refer to the [official documentation]()
 
 - The `python 3.4+` interpreter installed together with its main package manager `pip3`.
 
-Most of distributions comes bundled with `python 2.7+`, which is not suitable for our project. Once again use a package manager, for example in ubuntu you would run:
+Most distributions come bundled with `python 2.7+`, which is not suitable for our project. Once again use a package manager, for example in ubuntu you would run:
 
 ```bash
 $ apt-get update && apt-get install python3-pip
@@ -63,6 +63,8 @@ To install docker on a unix terminal you may use the [get docker script](https:/
 $ curl -fsSL get.docker.com -o get-docker.sh
 $ sh get-docker.sh
 ```
+
+For CentOS distributions, the installation slightly differs. Please refer to the [official instructions](https://docs.docker.com/engine/installation/linux/docker-ce/centos/).
 
 For Mac and Windows users dedicated applications were written: 
 
