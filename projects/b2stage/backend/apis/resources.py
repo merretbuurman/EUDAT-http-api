@@ -228,7 +228,7 @@ class Resources(ClusterContainerEndpoint):
         response = {
             'batch_id': batch_id,
             'qc_name': qc_name,
-            'status': 'executed',
+            'status': 'started',
             'input': input_json,
         }
 
