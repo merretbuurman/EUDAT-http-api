@@ -217,13 +217,17 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
 
         ########################
 
-        if errors is not None:
+        if errors is None:
+            log_string = 'end'
+        else:
+            log_string = 'failure'
+
             if isinstance(errors, dict):
                 edict = errors.get('error', {})
                 # errors = edict
                 # print("TEST", edict)
                 if edict.get('code') == 'NotUnique':
-                    response['status'] = 'existing'
+                    response['status'] = 'existing' # TODO: But existing is the container, not the files, right?
                 else:
                     response['status'] = 'Copy could NOT be started'
                     response['description'] = edict
@@ -235,7 +239,7 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
         # Log end (of upload) into RabbitMQ
         log_msg = prepare_message(
             self, status=response['status'],
-            user=ingestion_user, log_string='end')
+            user=ingestion_user, log_string=logstring)
         log_into_queue(self, log_msg)
 
 
