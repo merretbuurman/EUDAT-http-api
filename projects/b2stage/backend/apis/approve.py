@@ -15,6 +15,7 @@ from b2stage.apis.commons.seadatacloud import \
 from utilities import htmlcodes as hcodes
 from restapi import decorators as decorate
 from restapi.flask_ext.flask_irods.client import IrodsException
+from b2stage.apis.commons.queue import log_into_queue, prepare_message
 # from restapi.services.detect import detector
 from utilities.logs import get_logger
 
@@ -179,6 +180,14 @@ class MoveToProductionEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
     @decorate.catch_error(exception=IrodsException, exception_label='B2SAFE')
     def post(self, batch_id):
 
+        # Log start into RabbitMQ
+        log.info('Received request to approve batch "%s"' % batch_id)
+        log_msg = prepare_message(self,
+            log_string='start',
+            info= dict(batch_id = batch_id)
+        )
+        log_into_queue(self, log_msg)
+
         ################
         # 0. check parameters
         json_input = self.get_input()
@@ -187,22 +196,54 @@ class MoveToProductionEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         param_key = 'parameters'
         params = json_input.get(param_key, {})
         if len(params) < 1:
+
+            err_msg = ("'%s' is empty" % param_key)
+
+            # Log failure into RabbitMQ
+            log_msg = prepare_message(self,
+                log_string='failure',
+                error = err_msg,
+                info = dict(batch_id = batch_id)
+            )
+            log_into_queue(self, log_msg)
+
             return self.send_errors(
-                "'%s' is empty" % param_key, code=hcodes.HTTP_BAD_REQUEST)
+                err_msg, code=hcodes.HTTP_BAD_REQUEST)
 
         key = 'pids'
         files = params.get(key, {})
         if len(files) < 1:
+
+            err_msg = ("'%s' parameter is empty list" % key)
+
+            # Log failure into RabbitMQ
+            log_msg = prepare_message(self,
+                log_string='failure',
+                error = err_msg,
+                info = dict(batch_id = batch_id)
+            )
+            log_into_queue(self, log_msg)
+
             return self.send_errors(
-                "'%s' parameter is empty list" % key,
+                err_msg,
                 code=hcodes.HTTP_BAD_REQUEST)
 
         filenames = []
         for data in files:
 
             if not isinstance(data, dict):
-                return self.send_errors(
-                    "File list contains at least one wrong entry",
+                err_msg = "File list contains at least one wrong entry"
+                log.warn(err_msg)
+
+                # Log failure into RabbitMQ
+                log_msg = prepare_message(self,
+                    log_string='failure',
+                    error = error,
+                    info = dict(batch_id = batch_id)
+                )
+                log_into_queue(self, log_msg)
+
+                return self.send_errors(err_msg,
                     code=hcodes.HTTP_BAD_REQUEST)
 
             # print("TEST", data)
@@ -218,8 +259,18 @@ class MoveToProductionEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
                 if value_len < 1:
                     error = "Param '%s': empty" % key
                 if error is not None:
-                    return self.send_errors(
-                        error, code=hcodes.HTTP_BAD_REQUEST)
+
+                    # Log failure into RabbitMQ
+                    log.warn(error)
+                    log_msg = prepare_message(self,
+                        log_string='failure',
+                        error = error,
+                        info = dict(batch_id = batch_id)
+                    )
+                    log_into_queue(self, log_msg)
+
+                    return self.send_errors(error,
+                        code=hcodes.HTTP_BAD_REQUEST)
 
             filenames.append(data.get(md.tid))
 
@@ -230,8 +281,17 @@ class MoveToProductionEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         log.debug("Batch path: %s", self.batch_path)
 
         if not imain.is_collection(self.batch_path):
-            return self.send_errors(
-                "Batch '%s' not enabled (or no permissions)" % batch_id,
+            err_msg = ("Batch '%s' not enabled (or no permissions)" % batch_id)
+            log.warn(err_msg)
+
+            # Log failure into RabbitMQ
+            log_msg = prepare_message(self,
+                log_string='failure',
+                error = err_msg,
+                info = dict(batch_id = batch_id)
+            )
+            log_into_queue(self, log_msg)
+            return self.send_errors(err_msg,
                 code=hcodes.HTTP_BAD_REQUEST)
 
         ################
@@ -317,5 +377,16 @@ class MoveToProductionEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
 
         # ################
         # return json_input
+
+        # Log end into RabbitMQ
+        log_msg = prepare_message(self,
+            log_string='return',
+            info = dict(
+                batch_id = batch_id,
+                async = task.id
+            )
+        )
+        log_into_queue(self, log_msg)
+        # TODO Where is completion logged?
 
         return {'async': task.id}
