@@ -105,9 +105,23 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
         ALLOWED_MIMETYPE_UPLOAD = 'application/octet-stream'
         from flask import request
         if request.mimetype != ALLOWED_MIMETYPE_UPLOAD:
-            return self.send_errors(
-                "Only mimetype allowed for upload: %s"
-                % ALLOWED_MIMETYPE_UPLOAD,
+
+            err_msg = ("Only mimetype allowed for upload: %s"
+                % ALLOWED_MIMETYPE_UPLOAD)
+
+            # Log error into RabbitMQ
+            log_msg = prepare_message(self,
+                user = ingestion_user,
+                log_string = 'failure',
+                info = dict(
+                    batch_id = batch_id,
+                    file_id = file_id,
+                    error = err_msg
+                )
+            )
+            log_into_queue(self, log_msg)
+
+            return self.send_errors(err_msg,
                 code=hcodes.HTTP_BAD_REQUEST)
 
         ########################
@@ -141,8 +155,20 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
             iout = icom.write_in_streaming(destination=ipath, force=True)
         except BaseException as e:
             log.error("Failed streaming to iRODS: %s", e)
-            return self.send_errors(
-                "Failed streaming towards B2SAFE cloud",
+            err_msg = 'Failed streaming towards B2SAFE cloud'
+            # Log error into RabbitMQ
+            log_msg = prepare_message(self,
+                user = ingestion_user,
+                log_string = 'failure',
+                info = dict(
+                    batch_id = batch_id,
+                    file_id = file_id,
+                    error = err_msg
+                )
+            )
+            log_into_queue(self, log_msg)
+
+            return self.send_errors(err_msg,
                 code=hcodes.HTTP_SERVER_ERROR)
         else:
             log.info("irods call %s", iout)
