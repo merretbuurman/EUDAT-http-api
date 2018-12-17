@@ -12,6 +12,7 @@ from b2stage.apis.commons.endpoint import MISSING_BATCH, NOT_FILLED_BATCH
 from b2stage.apis.commons.endpoint import BATCH_MISCONFIGURATION
 from b2stage.apis.commons.cluster import INGESTION_DIR, MOUNTPOINT
 from b2stage.apis.commons.b2handle import B2HandleEndpoint
+from b2stage.apis.commons.queue import log_start, log_failure, log_success, log_success_uncertain
 from utilities import htmlcodes as hcodes
 from utilities import path
 from restapi import decorators as decorate
@@ -74,6 +75,12 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
     def put(self, batch_id, qc_name):
         """ Launch a quality check inside a container """
 
+        # Log start into RabbitMQ
+        log.info('Received request to run qc "%s" on batch "%s"' % (qc_name, batch_id))
+        json_input = self.get_input() # call only once
+        taskname = 'qc'
+        log_start(self, taskname, json_input)
+
         ###########################
         # get name from batch
         imain = self.get_service_instance(service_name='irods')
@@ -83,23 +90,32 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
         log.info("Batch local path: %s", local_path)
         batch_status, batch_files = self.get_batch_status(imain, batch_path, local_path)
 
+        # Failure: Batch not found or no permissions
         if batch_status == MISSING_BATCH:
+            err_msg = ("Batch '%s' not found (or no permissions)" % batch_id)
+            log.warn(err_msg)
+            log_failure(self, taskname, json_input, err_msg)
             return self.send_errors(
-                "Batch '%s' not found (or no permissions)" % batch_id,
+                err_msg,
                 code=hcodes.HTTP_BAD_REQUEST
             )
 
+        # Failure: No files
         if batch_status == NOT_FILLED_BATCH:
+            err_msg = ("Batch '%s' not yet filled" % batch_id)
+            log.warn(err_msg)
+            log_failure(self, taskname, json_input, err_msg)
             return self.send_errors(
-                "Batch '%s' not yet filled" % batch_id,
+                err_msg,
                 code=hcodes.HTTP_BAD_REQUEST)
 
+        # Failure: More than 1 file:
         if batch_status == BATCH_MISCONFIGURATION:
-            log.error(
-                'Misconfiguration: %s files in %s (expected 1)',
+            err_msg = ('Misconfiguration: %s files in %s (expected 1)',
                 len(batch_files), batch_path)
+            log_failure(self, taskname, json_input, err_msg)
             return self.send_errors(
-                "Misconfiguration for batch_id %s" % batch_id,
+                err_msg,
                 code=hcodes.HTTP_BAD_NOTFOUND)
 
         # try:
@@ -126,12 +142,15 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
         ###################
         # Parameters (and checks)
         envs = {}
-        input_json = self.get_input()
 
+        # Backdoor: Allows to use a docker image with prefix "eudat"
+        # instead of prefix "maris"!
         # TODO: backdoor check - remove me
-        bd = input_json.pop('eudat_backdoor', False)
-        if bd:
+        # TODO: Un-hard-code prefixes!
+        backdoor = json_input.pop('eudat_backdoor', False)
+        if backdoor:
             im_prefix = 'eudat'
+            log.info('Running an eudat image (backdoor)!')
         else:
             im_prefix = 'maris'
         log.debug("Image prefix: %s", im_prefix)
@@ -146,10 +165,15 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
         for key in param_keys:
             if key == pkey:
                 continue
-            value = input_json.get(key, None)
+            value = json_input.get(key, None)
+
+            # Failure: Missing JSON key
             if value is None:
+                err_msg = ('Missing JSON key: %s' % key)
+                log.warn(err_msg)
+                log_failure(self, taskname, json_input, err_msg)
                 return self.send_errors(
-                    'Missing JSON key: %s' % key,
+                    err_msg,
                     code=hcodes.HTTP_BAD_REQUEST
                 )
             # else:
@@ -157,7 +181,7 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
 
         ###################
         # # check batch id also from the parameters
-        # batch_j = input_json.get(pkey, {}).get("batch_number", 'UNKNOWN')
+        # batch_j = json_input.get(pkey, {}).get("batch_number", 'UNKNOWN')
         # if batch_j != batch_id:
         #     return self.send_errors(
         #         "Wrong JSON batch id: '%s' instead of '%s'" % (
@@ -166,7 +190,7 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
         #     )
 
         ###################
-        # for key, value in input_json.get(pkey, {}).items():
+        # for key, value in json_input.get(pkey, {}).items():
         #     name = '%s_%s' % (pkey, key)
         #     envs[name.upper()] = value
 
@@ -174,7 +198,7 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
             'batch_id': batch_id,
             'qc_name': qc_name,
             'status': 'executed',
-            'input': input_json,
+            'input': json_input,
         }
 
         ###################
@@ -236,7 +260,7 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
         json_input_file = "input.%s.json" % int(time.time())
         json_input_path = os.path.join(json_path_backend, json_input_file)
         with open(json_input_path, "w+") as f:
-            f.write(json.dumps(input_json))
+            f.write(json.dumps(json_input))
 
         json_path_qc = self.get_ingestion_path_on_host(JSON_DIR)
         json_path_qc = os.path.join(json_path_qc, batch_id)
@@ -250,7 +274,7 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
             ],
             'environment': envs
         }
-        if bd:
+        if backdoor:
             extra_params['command'] = ['/bin/sleep', '999999']
 
         # log.info(extra_params)
@@ -262,24 +286,41 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
             extras=extra_params
         )
 
+        # Treating errors:
         if errors is not None:
+            log.error('Rancher said (container %s): %s (image %s)' % (container_name, errors, docker_image_name))
             if isinstance(errors, dict):
                 edict = errors.get('error', {})
 
-                # This case should never happens, since already verified before
+                # NotUnique just means that another
+                # container of the same name exists!
+                # This case should never happen, since already verified before
                 if edict.get('code') == 'NotUnique':
+                    err_msg = 'QC: A container of the same name existed (%s). Please delete and retry.' % container_name
                     response['status'] = 'existing'
                     code = hcodes.HTTP_BAD_CONFLICT
+
+                # Failure: Rancher returned errors.
                 else:
+                    err_msg = 'QC could NOT be started (rancher error on container %s: "%s")' % (container_name, edict)
                     response['status'] = 'could NOT be started'
                     response['description'] = edict
                     code = hcodes.HTTP_BAD_REQUEST
+
+            # Failure: Rancher returned unknown error.
             else:
+                err_msg = 'QC could NOT be started (unknown error on container %s)' % container_name
                 response['status'] = 'failure'
                 code = hcodes.HTTP_BAD_REQUEST
+
+            log_failure(self, taskname, json_input, err_msg)
             return self.force_response(
                 response, errors=[response['status']], code=code)
 
+        # Seems it went well:
+        desc = 'QC container %s was launched. Success unclear yet.' % container_name
+        log_success_uncertain(self, taskname, json_input, 'launched', desc)
+        # TODO return 202
         return response
 
     @decorate.catch_error(exception=IrodsException, exception_label='B2SAFE')
@@ -288,10 +329,17 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
         Remove a quality check executed
         """
 
+        taskname = 'delete_qc_container'
+        payload = {'batch_id': batch_id, 'qc_name': qc_name}
+        log_start(self, taskname, payload)
+
         container_name = self.get_container_name(batch_id, qc_name)
+
+        # Actual removal:
         rancher = self.get_or_create_handle()
         rancher.remove_container_by_name(container_name)
-        # wait up to 10 seconds to verify the deletion
+
+        # Wait up to 10 seconds to verify the deletion
         log.info("Removing: %s...", container_name)
         removed = False
         for _ in range(0, 20):
@@ -304,17 +352,24 @@ class Resources(B2HandleEndpoint, ClusterContainerEndpoint):
             else:
                 log.very_verbose("%s still exists", container_name)
 
+        # Inform & return result
         if not removed:
-            log.warning("%s still in removal status", container_name)
+            msg = ("%s still in removal status", container_name)
+            log.warning(msg)
+            status = 'not_yet_removed'
             response = {
                 'batch_id': batch_id,
                 'qc_name': qc_name,
-                'status': 'not_yet_removed',
+                'status': status,
             }
+            log_success_uncertain(self, taskname, payload, status, msg)
         else:
+            msg = ("Container %s is removed", container_name)
+            status = 'removed'
             response = {
                 'batch_id': batch_id,
                 'qc_name': qc_name,
-                'status': 'removed',
+                'status': status,
             }
+            log_success(self, taskname, payload, status, desc)
         return response
