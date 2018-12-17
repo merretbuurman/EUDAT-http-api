@@ -12,7 +12,7 @@ from restapi.services.uploader import Uploader
 from restapi.flask_ext.flask_celery import CeleryExt
 from b2stage.apis.commons.cluster import ClusterContainerEndpoint
 from b2stage.apis.commons.cluster import INGESTION_DIR, MOUNTPOINT
-from b2stage.apis.commons.queue import log_into_queue, prepare_message
+from b2stage.apis.commons.queue import log_start, log_failure, log_success, log_success_uncertain, log_submitted_async
 from utilities import htmlcodes as hcodes
 from utilities import path
 # from restapi.flask_ext.flask_irods.client import IrodsException
@@ -30,9 +30,8 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
 
         log.info("Batch request: %s", batch_id)
         # json = {'batch_id': batch_id}
-        # msg = prepare_message(
-        #     self, json=json, user=ingestion_user, log_string='start')
-        # log_into_queue(self, msg)
+        # taskname = 'get_enable_status'
+        # log_start(self, taskname, json)
 
         ########################
         # get irods session
@@ -99,10 +98,9 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
         log.info('Received request to upload batch "%s"' % batch_id)
 
         # Log start (of upload) into RabbitMQ
-        log_msg = prepare_message(
-            self, json={'batch_id': batch_id, 'file_id': file_id},
-            user=ingestion_user, log_string='start')
-        log_into_queue(self, log_msg)
+        taskname = 'upload'
+        json_input = self.get_input() # call only once
+        log_start(self, taskname, json_input)
 
         ########################
         # get irods session
@@ -118,18 +116,7 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
 
             err_msg = ("Batch '%s' not enabled or you have no permissions"
                        % batch_id)
-            # Log error into RabbitMQ
-            log_msg = prepare_message(
-                self, user=ingestion_user,
-                log_string='failure',
-                info=dict(
-                    batch_id=batch_id,
-                    file_id=file_id,
-                    error=err_msg
-                )
-            )
-            log_into_queue(self, log_msg)
-
+            log_failure(self, taskname, json_input, err_msg)
             return self.send_errors(err_msg, code=hcodes.HTTP_BAD_NOTFOUND)
 
         ########################
@@ -157,16 +144,8 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
         # This path is created by the POST method, important to keep this check here
         if backdoor and icom.is_dataobject(zip_path_irods):
             response['status'] = 'exists'
-
-            # Log end (of upload) into RabbitMQ
-            # In case it already existed!
-            log_msg = prepare_message(
-                self,
-                user=ingestion_user,
-                log_string='end',  # TODO True?
-                status=response['status']
-            )
-            log_into_queue(self, log_msg)
+            desc = 'Backdoor: A file had been uploaded already for this batch. Stopping.'
+            log_success_uncertain(self, taskname, json_input, response['status'], desc)
             return response
 
         ########################
@@ -207,13 +186,8 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
             queue='ingestion', routing_key='ingestion')
         log.warning("Async job: %s", task.id)
 
-        # Log end (of upload) into RabbitMQ
-        log_msg = prepare_message(
-            self, status=response['status'],
-            user=ingestion_user, log_string='end')
-        log_into_queue(self, log_msg)
-
         # return self.force_response(response)
+        log_submitted_async(self, taskname, json_input, task.id)
         return self.return_async_id(task.id)
 
     def post(self):
@@ -222,8 +196,8 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
         """
 
         param_name = 'batch_id'
-        self.get_input()
-        batch_id = self._args.get(param_name, None)
+        json_input = self.get_input() # call only once
+        batch_id = json_input['batch_id'] if 'batch_id' in json_input else None
 
         if batch_id is None:
             return self.send_errors(
@@ -231,12 +205,8 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
                 code=hcodes.HTTP_BAD_REQUEST)
 
         log.info('Received request to enable batch "%s"' % batch_id)
-
-        # Log start (of enable) into RabbitMQ
-        log_msg = prepare_message(
-            self, json={'batch_id': batch_id},
-            user=ingestion_user, log_string='start')
-        log_into_queue(self, log_msg)
+        taskname = 'enable'
+        log_start(self, taskname, json_input)
 
         ##################
         # Get irods session
@@ -272,11 +242,7 @@ class IngestionEndpoint(Uploader, EudatEndpoint, ClusterContainerEndpoint):
             response = "Batch '%s' already exists" % batch_id
             status = 'exists'
 
-        # Log end (of enable) into RabbitMQ
-        log_msg = prepare_message(
-            self, status=status, user=ingestion_user, log_string='end')
-        log_into_queue(self, log_msg)
-
+        log_success(self, taskname, json_input, status, response)
         return self.force_response(response)
 
     def delete(self):

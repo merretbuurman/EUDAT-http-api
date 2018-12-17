@@ -29,7 +29,7 @@ from b2stage.apis.commons.seadatacloud import ORDERS_ENDPOINT
 from restapi.flask_ext.flask_celery import CeleryExt
 # from b2stage.apis.commons.endpoint import EudatEndpoint
 # from b2stage.apis.commons.seadatacloud import Metadata as md
-from b2stage.apis.commons.queue import log_into_queue, prepare_message
+from b2stage.apis.commons.queue import log_start, log_success, log_submitted_async 
 from utilities import htmlcodes as hcodes
 from restapi import decorators as decorate
 from restapi.flask_ext.flask_irods.client import IrodsException
@@ -84,9 +84,8 @@ class DownloadBasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         """ downloading (not authenticated) """
         log.info("Order request: %s (code '%s')", order_id, code)
         json = {'order_id': order_id, 'code': code}
-        msg = prepare_message(
-            self, json=json, user='anonymous', log_string='start')
-        log_into_queue(self, msg)
+        taskname = 'download'
+        log_start(self, taskname, json)
 
         ##################
         imain = self.get_service_instance(service_name='irods')
@@ -155,9 +154,9 @@ class DownloadBasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
             'Content-Disposition': "attachment; filename=%s" %
             zip_file_name,
         }
-        msg = prepare_message(
-            self, json=json, log_string='end', status='sent')
-        log_into_queue(self, msg)
+        status = 'sent'
+        desc = 'Data sent' # TODO Better description
+        log_success(self, taskname, json_input, status, desc)
         return icom.stream_ticket(zip_ipath, headers=headers)
 
 
@@ -167,8 +166,8 @@ class BasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         """ listing, not downloading """
 
         log.debug('GET request on orders')
-        msg = prepare_message(self, json=None, log_string='start')
-        log_into_queue(self, msg)
+        taskname = 'listing'
+        log_start(self, taskname, None)
 
         ##################
         imain = self.get_service_instance(service_name='irods')
@@ -218,8 +217,9 @@ class BasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         #     return self.send_errors(error, code=hcodes.HTTP_BAD_REQUEST)
 
         ##################
-        msg = prepare_message(self, log_string='end', status='completed')
-        log_into_queue(self, msg)
+        status = 'completed'
+        desc = 'Listing is completed' # TODO Better description
+        log_success(self, taskname, None, status, desc)
         return response
 
     @decorate.catch_error(exception=IrodsException, exception_label='B2SAFE')
@@ -228,8 +228,8 @@ class BasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         ##################
         log.debug('POST request on orders')
         json_input = self.get_input()
-        msg = prepare_message(self, json=json_input, log_string='start')
-        log_into_queue(self, msg)
+        taskname = 'post-orders' # TODO better name!
+        log_start(self, taskname, json_input)
 
         ##################
         main_key = 'parameters'
@@ -298,16 +298,6 @@ class BasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
             return self.return_async_id(task.id)
 
         # ################
-        # msg = prepare_message(self, log_string='end')
-        # # msg = prepare_message(self, log_string='end', status='created')
-        # msg['parameters'] = {
-        #     "request_id": msg['request_id'],
-        #     "zipfile_name": params['file_name'],
-        #     "zipfile_count": 1,
-        # }
-        # log_into_queue(self, msg)
-
-        # ################
         # # return {order_id: 'created'}
         # # json_input['status'] = 'created'
         # json_input['request_id'] = msg['request_id']
@@ -319,6 +309,7 @@ class BasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         # api = API()
         # api.post(json_input)
 
+        log_submitted_async(self, taskname, json_input, task.id)
         return {'status': 'enabled'}
 
     def no_slash_ticket(self, imain, path):
@@ -394,10 +385,10 @@ class BasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
         # return "Hello"
 
         ##################
-        log.info("Order request: %s", order_id)
-        msg = prepare_message(
-            self, json={'order_id': order_id}, log_string='start')
-        log_into_queue(self, msg)
+        log.info("Order request: %s", order_id)')
+        taskname = 'put-download' # TODO MATTIA What does this do?
+        payload = {'order_id': order_id}
+        log_start(self, taskname, payload)
 
         # obj = self.init_endpoint()
         # icom = obj.icommands
@@ -466,9 +457,9 @@ class BasketEndpoint(B2HandleEndpoint, ClusterContainerEndpoint):
             error = "Order '%s' not found (or no permissions)" % order_id
             return self.send_errors(error, code=hcodes.HTTP_BAD_NOTFOUND)
 
-        msg = prepare_message(self, log_string='end', status='enabled')
-        log_into_queue(self, msg)
-
+        status = 'enabled'
+        desc = 'Something was done' # TODO MATTIA Better description
+        log_success(self, taskname, payload, 'enabled', description)
         return self.force_response(response)
 
     def delete(self):
