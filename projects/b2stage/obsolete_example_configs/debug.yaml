@@ -62,7 +62,9 @@ variables:
     RABBIT_USER: elkuser
     RABBIT_PASSWORD:
     RABBIT_EXCHANGE: elkexchange
-    RABBIT_QUEUE: elkqueue
+    RABBIT_ROUTING_KEY: elkroutingkey
+    RABBIT_APP_NAME: httpapi
+    RABBIT_SSL_ENABLED: 0
     ## OTHERS
     CONTAINERS_RABBITUSER:
     CONTAINERS_RABBITPASS:

@@ -86,7 +86,7 @@ It needs the following info from config:
 
 * RABBIT_EXCHANGE (where the message is sent to to be
     distributed to a queue).
-* RABBIT_QUEUE (will be used as routing key to route the
+* RABBIT_ROUTING_KEY (will be used as routing key to route the
     message to the correct queue).
 * RABBIT_APP_NAME (will determine the name of the
     ElasticSearch index where the message will be stored.
@@ -101,7 +101,7 @@ def log_into_queue(instance, dictionary_message):
     log.verbose('LOG MESSAGE to be passed to log-queue: %s ' % dictionary_message)
 
     current_exchange = QUEUE_VARS.get('exchange')
-    routing_key = QUEUE_VARS.get('queue')
+    routing_key = QUEUE_VARS.get('routing_key')
     app_name = QUEUE_VARS.get('app_name')
 
     if app_name is None:

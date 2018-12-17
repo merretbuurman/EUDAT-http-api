@@ -29,7 +29,9 @@ variables:
     RABBIT_USER: put_some_value
     RABBIT_PASSWORD: put_some_value
     RABBIT_EXCHANGE: put_some_value
-    RABBIT_QUEUE: put_some_value
+    RABBIT_ROUTING_KEY: put_some_value
+    RABBIT_SSL_ENABLED: put_some_value
+    RABBIT_APP_NAME: put_some_value
     ## OTHERS
     CONTAINERS_RABBITUSER: put_some_value
     CONTAINERS_RABBITPASS: put_some_value
