@@ -7,7 +7,8 @@ volumes:
 services:
 
   backend:
-    restart: on-failure:5
+    restart: always
+    #restart: on-failure:5
     # TO TEST the failure:
     # 1. go inside backend
     # 2. ps aux --forest
@@ -56,8 +57,8 @@ services:
       # SAME AS CELERY in WORKERS.YML
       - ${RESOURCES_LOCALPATH}:${SEADATA_RESOURCES_MOUNTPOINT}
   postgres:
-    # restart: always
-    restart: on-failure:5
+    restart: always
+    #restart: on-failure:5
     # Activate a production ready configuration
     volumes:
       - ${SUBMODULE_DIR}/build-templates/postgres/pgs_prod.sh:/docker-entrypoint-initdb.d/init-production.conf.sh:ro
