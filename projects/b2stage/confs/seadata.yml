@@ -18,7 +18,7 @@ services:
     # command: sleep infinity
     environment:
       APP_MODE: production
-      DEBUG_LEVEL: INFO
+      DEBUG_LEVEL: ${LOG_LEVEL}
       NGINX_ACTIVE: "True"
 
       ##################
