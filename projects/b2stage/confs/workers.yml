@@ -11,6 +11,7 @@ services:
       ACTIVATE: 0
 
   celery:
+    restart: always
     build: ${VANILLA_DIR}/projects/${COMPOSE_PROJECT_NAME}/builds/celery
     image: ${COMPOSE_PROJECT_NAME}/celery:${RAPYDO_VERSION}
     command: celery worker --concurrency=1 -Ofair -A restapi.flask_ext.flask_celery.worker.celery_app -Q celery -n worker-%h
@@ -46,6 +47,7 @@ services:
       IRODS_AUTHSCHEME: ${IRODS_AUTHSCHEME}
 
   celeryui:
+    restart: always
     build: ${VANILLA_DIR}/projects/${COMPOSE_PROJECT_NAME}/builds/celery
     image: ${COMPOSE_PROJECT_NAME}/celery:${RAPYDO_VERSION}
     hostname: flower
